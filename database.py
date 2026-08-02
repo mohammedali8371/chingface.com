@@ -216,7 +216,11 @@ class Database:
         CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_id);
         CREATE INDEX IF NOT EXISTS idx_errors_time ON errors(created_at);
         """
-        await self._execute(schema)
+        if self._conn is None:
+            raise RuntimeError("قاعدة البيانات غير متصلة")
+        # executescript تنفذ مخططاً بعدة عبارات SQL دفعة واحدة
+        async with self._write_lock:
+            await self._conn.executescript(schema)
         logger.info("تم إنشاء جداول قاعدة البيانات بنجاح ✓")
 
     # ============================================================
