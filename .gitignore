@@ -19,8 +19,14 @@ venv/
 env/
 
 # مجلدات التخزين والمشروع (تُنشأ تلقائياً عند التشغيل)
-storage/
 logs/
+
+# بيانات التشغيل داخل storage/ (يُستثنى كود المجلد نفسه)
+storage/database.db
+storage/*.db
+storage/models/
+storage/temp/
+storage/backups/
 
 # ملفات النظام
 .DS_Store
