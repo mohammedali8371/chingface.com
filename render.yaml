@@ -1,0 +1,61 @@
+# ================================================================
+# ملف render.yaml
+# -----------------
+# هذا الملف خاص بخدمة Render Web Service (الخطة المجانية).
+# Render يقرأ هذا الملف لتشغيل المشروع تلقائياً عند النشر.
+#
+# ملاحظات:
+#   - الخطة المجانية على Render توفر 512MB رام ومعالج مشترك.
+#   - السيرفر ينام بعد فترة خمول (Spins down) ويستيقظ عند وصول
+#     طلب Webhook جديد، لذلك تأكد أن البوت يعمل عبر Webhook فقط.
+#   - ستحتاج لضبط متغيرات البيئة التالية في لوحة Render:
+#       BOT_TOKEN  و  PUBLIC_URL
+# ================================================================
+
+# تعريف الخدمة الأساسية
+services:
+  # النوع: خدمة ويب (Web Service)
+  - type: web
+    # اسم الخدمة (يظهر في لوحة Render)
+    name: telegram-ai-face-swap-bot-pro
+    # بيئة التشغيل: بايثون
+    runtime: python
+    # الخطة المجانية
+    plan: free
+    # منطقة النشر الافتراضية (يمكنك تغييرها)
+    region: oregon
+
+    # أمر البناء: تثبيت جميع المكتبات
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+
+    # أمر التشغيل: تشغيل خادم Uvicorn على المنفذ الذي يوفره Render
+    # ($PORT متغير يحدده Render تلقائياً)
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1"
+
+    # متغيرات البيئة
+    envVars:
+      # توكن البوت من BotFather
+      # ملاحظة: اخترنا sync: false حتى لا يظهر التوكن في هذا الملف
+      - key: BOT_TOKEN
+        sync: false
+
+      # الرابط العام للخدمة (يظهر في Render بعد النشر)
+      - key: PUBLIC_URL
+        sync: false
+
+      # معرف المطور (لوحة التحكم)
+      - key: DEVELOPER_ID
+        value: "7958260008"
+
+      # إعدادات إضافية
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: ENABLE_ENHANCER
+        value: "false"
+      - key: ENABLE_RATE_LIMIT
+        value: "true"
+      - key: MAX_VIDEO_DURATION_SECONDS
+        value: "20"
+
+    # فترة نوم الخدمة المجانية
+    autoDeploy: true
