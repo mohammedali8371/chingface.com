@@ -22,6 +22,7 @@ import cv2
 
 from ai.enhancer import enhancer
 from ai.model_manager import model_manager
+from config import settings
 from logger import get_logger
 
 # سجل خاص بهذه الوحدة
@@ -64,7 +65,25 @@ class FaceSwapper:
         img = cv2.imread(str(path))
         if img is None:
             raise ValueError(f"تعذر قراءة الصورة: {path}")
-        return img
+        # تصغير الصور الكبيرة لتوفير الذاكرة وتسريع المعالجة
+        return self._resize_if_large(img)
+
+    def _resize_if_large(self, img):
+        """
+        يصغر الصورة إذا كان بعدها الأطول أكبر من الحد المحدد.
+        هذا يقلل استهلاك الذاكرة بشكل كبير على الخطط المجانية.
+        """
+        h, w = img.shape[:2]
+        max_dim = settings.MAX_IMAGE_DIM
+        if max_dim <= 0:
+            return img
+        longest = max(h, w)
+        if longest <= max_dim:
+            return img
+        scale = max_dim / longest
+        new_size = (int(w * scale), int(h * scale))
+        logger.debug(f"تصغير الصورة {w}x{h} -> {new_size[0]}x{new_size[1]}")
+        return cv2.resize(img, new_size, interpolation=cv2.INTER_AREA)
 
     def _detect_faces(self, img, required: int = 1, context: str = ""):
         """
@@ -138,6 +157,14 @@ class FaceSwapper:
         cv2.imwrite(str(output_path), result)
         if not output_path.exists():
             raise RuntimeError("فشل حفظ الصورة الناتجة.")
+
+        # تحرير الذاكرة مؤقتاً بعد العملية لتخفيف الضغط على الخطة المجانية
+        try:
+            del source_img, target_img, result
+            import gc
+            gc.collect()
+        except Exception:
+            pass
 
         logger.info(f"تم تبديل الوجه بنجاح: {output_path}")
         return output_path

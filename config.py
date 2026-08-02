@@ -92,10 +92,17 @@ class Settings(BaseSettings):
     # إعدادات الذكاء الاصطناعي
     # ------------------------------------------------------------
     # اسم نموذج اكتشاف الوجوه من InsightFace
-    MODEL_NAME: str = "buffalo_l"
+    # buffalo_s أخف بكثير من buffalo_l (مهم على الخطط المحدودة الذاكرة)
+    MODEL_NAME: str = "buffalo_s"
 
     # اسم نموذج تبديل الوجه
     SWAPPER_MODEL: str = "inswapper_128"
+
+    # حجم كشف الوجوه (أصغر = أسرع وأخف على الذاكرة)
+    DET_SIZE: int = 320
+
+    # الحد الأقصى للبعد الأطول للصورة قبل المعالجة (توفير الذاكرة)
+    MAX_IMAGE_DIM: int = 1024
 
     # تفعيل تحسين الجودة بعد التبديل (GFPGAN إن كان مثبتاً)
     ENABLE_ENHANCER: bool = False

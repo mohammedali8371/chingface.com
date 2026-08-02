@@ -69,6 +69,27 @@ class ModelManager:
                 "مكتبة insightface غير مثبتة. قم بتشغيل: pip install -r requirements.txt"
             ) from exc
 
+    def _build_session_options(self):
+        """
+        يُنشئ خيارات جلسة ONNX Runtime لتقليل استهلاك الذاكرة.
+        - يعطّل تخصيص الذاكرة المستمر (Memory Arena) لتقليل التضخم.
+        - يحدد عدد الخيوط لمنع ازدحام الذاكرة على الخطة المجانية.
+        """
+        try:
+            import onnxruntime as ort
+            opts = ort.SessionOptions()
+            # الذاكرة: منع الخوارزميات كثيفة الاستهلاك للمخططات
+            opts.enable_cpu_mem_arena = False
+            opts.enable_mem_pattern = False
+            opts.enable_mem_reuse = True
+            # الخيوط: خيط واحد لكل معالج لتقليل الذاكرة
+            opts.intra_op_num_threads = 1
+            opts.inter_op_num_threads = 1
+            opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            return opts
+        except Exception:
+            return None
+
     # ------------------------------------------------------------
     # نموذج تحليل الوجوه
     # ------------------------------------------------------------
@@ -91,7 +112,11 @@ class ModelManager:
                     providers=["CPUExecutionProvider"],  # العمل على المعالج
                 )
                 # تجهيز النموذج: ctx_id=-1 يعني CPU، det_size حجم الكشف
-                face_app.prepare(ctx_id=-1, det_size=(640, 640))
+                # حجم كشف أصغر (320) يقلل استهلاك الذاكرة بشكل كبير
+                face_app.prepare(
+                    ctx_id=-1,
+                    det_size=(settings.DET_SIZE, settings.DET_SIZE),
+                )
                 self._face_app = face_app
                 logger.info("نموذج تحليل الوجوه جاهز ✓")
             except Exception as exc:
@@ -125,10 +150,14 @@ class ModelManager:
 
             logger.info(f"جارٍ تحميل نموذج تبديل الوجه ({settings.SWAPPER_MODEL})...")
             try:
+                kwargs = {"providers": ["CPUExecutionProvider"]}
+                session_options = self._build_session_options()
+                if session_options is not None:
+                    kwargs["session_options"] = session_options
                 # insightface.model_zoo يعرف كيفية تحميل inswapper_128 تلقائياً
                 swapper = insightface.model_zoo.get_model(
                     str(model_path),
-                    providers=["CPUExecutionProvider"],
+                    **kwargs,
                 )
                 self._swapper = swapper
                 logger.info("نموذج تبديل الوجه جاهز ✓")
@@ -149,6 +178,9 @@ class ModelManager:
         """
         self._face_app = None
         self._swapper = None
+        # تحرير الذاكرة فوراً بعد تحرير المرجعين
+        import gc
+        gc.collect()
         logger.info("تم تحرير نماذج الذكاء الاصطناعي من الذاكرة")
 
     def is_ready(self) -> bool:

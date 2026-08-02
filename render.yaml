@@ -57,5 +57,21 @@ services:
       - key: MAX_VIDEO_DURATION_SECONDS
         value: "20"
 
+      # نموذج كشف أخف (توفير الذاكرة على الخطة المجانية)
+      - key: MODEL_NAME
+        value: "buffalo_s"
+      - key: DET_SIZE
+        value: "320"
+      - key: MAX_IMAGE_DIM
+        value: "1024"
+
+      # تقييد خيوط ONNX/OpenCV لتقليل استهلاك الذاكرة
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+
     # فترة نوم الخدمة المجانية
     autoDeploy: true
